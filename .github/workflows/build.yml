@@ -14,6 +14,13 @@ jobs:
       - name: Instalace Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
+      - name: Příprava Cross.toml
+        run: |
+          cat << 'EOF' > Cross.toml
+          [target.mipsel-unknown-linux-musl]
+          image = "ghcr.io/cross-rs/mipsel-unknown-linux-musl:edge"
+          EOF
+
       - name: Kompilace pro MT7621 (MIPSEL)
         run: cross build --target mipsel-unknown-linux-musl --release
 
