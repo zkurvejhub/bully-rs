@@ -11,6 +11,12 @@ jobs:
       - name: Checkout kód
         uses: actions/checkout@v4
 
+      - name: Instalace Rust Nightly
+        run: |
+          rustup toolchain install nightly
+          rustup default nightly
+          rustup component add rust-src --toolchain nightly
+
       - name: Instalace Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
