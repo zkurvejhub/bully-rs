@@ -15,7 +15,7 @@ jobs:
         run: |
           rustup target add mips-unknown-linux-musl
 
-      - name: Instalace MIPS C Toolchainu a libpcap
+      - name: Instalace MIPS C Toolchainu
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mips-linux-gnu g++-mips-linux-gnu
@@ -36,3 +36,4 @@ jobs:
         with:
           name: bully-rs-mt7621
           path: target/mips-unknown-linux-musl/release/bully-rs
+
