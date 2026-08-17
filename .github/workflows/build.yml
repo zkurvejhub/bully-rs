@@ -1,0 +1,34 @@
+name: Build bully-rs for MT7621
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: openwrt/sdk:ramips-mt7621-23.05.0 # Oficiální OpenWrt SDK pro MT7621
+
+    steps:
+      - name: Checkout kód
+        uses: actions/checkout@v4
+        with:
+          path: 'bully-rs'
+
+      - name: Instalace Rustu v SDK
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Kompilace pro MT7621
+        run: |
+          source $HOME/.cargo/env
+          rustup target add mips-unknown-linux-musl
+          cd bully-rs
+          cargo build --target mips-unknown-linux-musl --release
+
+      - name: Uložení binárky
+        uses: actions/upload-artifact@v4
+        with:
+          name: bully-rs-mt7621
+          path: bully-rs/target/mips-unknown-linux-musl/release/bully-rs
