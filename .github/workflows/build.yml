@@ -6,36 +6,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: openwrt/sdk:ramips-mt7621-23.05.0
+      options: --user root
 
     steps:
       - name: Checkout kód
         uses: actions/checkout@v4
 
-      - name: Instalace Rust Nightly
+      - name: Instalace Rustu
         run: |
-          rustup toolchain install nightly
-          rustup default nightly
-          rustup component add rust-src --toolchain nightly
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Instalace Cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
-
-      - name: Příprava Cross.toml (kompilace libpcap ze zdroje)
+      - name: Kompilace pro MT7621
         run: |
-          cat << 'EOF' > Cross.toml
-          [target.mipsel-unknown-linux-musl]
-          image = "ghcr.io/cross-rs/mipsel-unknown-linux-musl:edge"
-          build-std = ["core", "alloc", "std", "proc_macro"]
-          pre-build = [
-            "apt-get update && apt-get install -y wget build-essential",
-            "wget https://www.tcpdump.org/release/libpcap-1.10.4.tar.gz",
-            "tar -xzf libpcap-1.10.4.tar.gz",
-            "cd libpcap-1.10.4 && ./configure --host=mipsel-linux-musl --prefix=/usr/local && make && make install"
-          ]
-          EOF
-
-      - name: Kompilace pro MT7621 (MIPSEL)
-        run: cross build --target mipsel-unknown-linux-musl --release
+          source $HOME/.cargo/env
+          rustup target add mipsel-unknown-linux-musl
+          cargo build --target mipsel-unknown-linux-musl --release
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
