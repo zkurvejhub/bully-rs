@@ -1,4 +1,4 @@
-name: Build bully-rs for MT7621
+name: Build bully-rs for WL-500gP
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:ramips-mt7621-23.05.0
+      image: openwrt/sdk:bcm47xx-mips74k-22.03.5
       options: --user root
 
     steps:
@@ -20,29 +20,29 @@ jobs:
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup component add rust-src --toolchain nightly
 
-      - name: Kompilace pro MT7621
+      - name: Kompilace pro WL-500gP (MIPS Big Endian)
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Nalezení OpenWrt C toolchainu v SDK
-          TOOLCHAIN_DIR=$(ls -d /builder/staging_dir/toolchain-mipsel_24kc_gcc-*_musl 2>/dev/null | head -n 1)
-          STAGING_DIR_TARGET=$(ls -d /builder/staging_dir/target-mipsel_24kc_musl 2>/dev/null | head -n 1)
+          # Nalezení BCM47xx C toolchainu v SDK
+          TOOLCHAIN_DIR=$(ls -d /builder/staging_dir/toolchain-mips_* 2>/dev/null | head -n 1)
+          STAGING_DIR_TARGET=$(ls -d /builder/staging_dir/target-mips_* 2>/dev/null | head -n 1)
           
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="/builder/staging_dir"
           
-          # Nastavení cross-kompilátoru a linkeru pro Rust
-          export CC_mipsel_unknown_linux_musl=mipsel-openwrt-linux-musl-gcc
-          export CARGO_TARGET_MIPSEL_UNKNOWN_LINUX_MUSL_LINKER=mipsel-openwrt-linux-musl-gcc
+          # Nastavení cross-kompilátoru pro mips-unknown-linux-musl
+          export CC_mips_unknown_linux_musl=mips-openwrt-linux-gcc
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER=mips-openwrt-linux-gcc
           
-          # C flags pro vyhledání hlavičkových souborů a knihoven libpcap z SDK
-          export CFLAGS_mipsel_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
-          export LDFLAGS_mipsel_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
+          # C flags pro knihovny z SDK
+          export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
+          export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
 
-          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mipsel-unknown-linux-musl --release
+          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-musl --release
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
-          name: bully-rs-mt7621
-          path: target/mipsel-unknown-linux-musl/release/bully-rs
+          name: bully-rs-wl500gp
+          path: target/mips-unknown-linux-musl/release/bully-rs
