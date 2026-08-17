@@ -20,13 +20,18 @@ jobs:
       - name: Instalace Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      - name: Příprava Cross.toml (build-std + libpcap)
+      - name: Příprava Cross.toml (kompilace libpcap ze zdroje)
         run: |
           cat << 'EOF' > Cross.toml
           [target.mipsel-unknown-linux-musl]
           image = "ghcr.io/cross-rs/mipsel-unknown-linux-musl:edge"
           build-std = ["core", "alloc", "std", "proc_macro"]
-          pre-build = ["dpkg --add-architecture mipsel && apt-get update && apt-get install -y libpcap-dev:mipsel"]
+          pre-build = [
+            "apt-get update && apt-get install -y wget build-essential",
+            "wget https://www.tcpdump.org/release/libpcap-1.10.4.tar.gz",
+            "tar -xzf libpcap-1.10.4.tar.gz",
+            "cd libpcap-1.10.4 && ./configure --host=mipsel-linux-musl --prefix=/usr/local && make && make install"
+          ]
           EOF
 
       - name: Kompilace pro MT7621 (MIPSEL)
