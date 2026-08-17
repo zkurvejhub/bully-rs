@@ -15,12 +15,12 @@ jobs:
         run: |
           rustup target add mips-unknown-linux-musl
 
-      - name: Instalace MIPS C Toolchainu
+      - name: Instalace MIPS C Toolchainu a libpcap
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-mips-linux-gnu g++-mips-linux-gnu
 
-      - name: Konfigurace Cargo pro MIPS linker
+      - name: Konfigurace Cargo pro MIPS
         run: |
           mkdir -p .cargo
           cat << 'EOF' > .cargo/config.toml
