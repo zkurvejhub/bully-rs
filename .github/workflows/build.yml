@@ -11,29 +11,14 @@ jobs:
       - name: Checkout kód
         uses: actions/checkout@v4
 
-      - name: Instalace Rustu a MIPS targetu
-        run: |
-          rustup target add mips-unknown-linux-musl
+      - name: Instalace Cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
-      - name: Instalace MIPS C Toolchainu
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-mips-linux-gnu g++-mips-linux-gnu
-
-      - name: Konfigurace Cargo pro MIPS
-        run: |
-          mkdir -p .cargo
-          cat << 'EOF' > .cargo/config.toml
-          [target.mips-unknown-linux-musl]
-          linker = "mips-linux-gnu-gcc"
-          EOF
-
-      - name: Kompilace pro MT7621
-        run: cargo build --target mips-unknown-linux-musl --release
+      - name: Kompilace pro MT7621 (MIPSEL)
+        run: cross build --target mipsel-unknown-linux-musl --release
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
           name: bully-rs-mt7621
-          path: target/mips-unknown-linux-musl/release/bully-rs
-
+          path: target/mipsel-unknown-linux-musl/release/bully-rs
