@@ -5,15 +5,23 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      # Správný tag Docker image pro BCM47xx v OpenWrt 19.07:
-      image: openwrt/sdk:bcm47xx-generic-v19.07.10
-      options: --user root
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout kód
         uses: actions/checkout@v4
+
+      - name: Příprava závislostí systému
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev \
+            zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip python3
+
+      - name: Stažení a příprava OpenWrt 19.07 SDK
+        run: |
+          wget https://downloads.openwrt.org/releases/19.07.10/targets/bcm47xx/mips32/openwrt-sdk-19.07.10-bcm47xx-mips32_gcc-7.5.0_musl.Linux-x86_64.tar.xz
+          tar -xf openwrt-sdk-19.07.10-bcm47xx-mips32_gcc-7.5.0_musl.Linux-x86_64.tar.xz
+          mv openwrt-sdk-* sdk
 
       - name: Instalace Rust Nightly
         run: |
@@ -21,34 +29,33 @@ jobs:
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup component add rust-src --toolchain nightly
 
-      - name: Kompilace pro WL-500gP (uClibc / OpenWrt 19.07)
+      - name: Kompilace pro WL-500gP
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Nalezení adresářů v SDK
-          TOOLCHAIN_DIR=$(find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
-          STAGING_DIR_TARGET=$(find /builder/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
+          # Cesty k toolchainu ze staženého SDK
+          SDK_DIR="$(pw)/sdk"
+          TOOLCHAIN_DIR=$(find $SDK_DIR/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
+          STAGING_DIR_TARGET=$(find $SDK_DIR/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
           
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
-          export STAGING_DIR="/builder/staging_dir"
+          export STAGING_DIR="$SDK_DIR/staging_dir"
           
-          # Vyhledání GCC kompilátoru
           GCC_FULL_PATH=$(find $TOOLCHAIN_DIR/bin -maxdepth 1 -type f -name "*-gcc" | head -n 1)
           GCC_NAME=$(basename "$GCC_FULL_PATH")
           
           echo "Nalezený linker: $GCC_NAME"
           
-          export CC_mips_unknown_linux_uclibc="$GCC_NAME"
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_UCLIBC_LINKER="$GCC_NAME"
+          export CC_mips_unknown_linux_musl="$GCC_NAME"
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_NAME"
           
-          # C flags pro knihovny z SDK
-          export CFLAGS_mips_unknown_linux_uclibc="-I$STAGING_DIR_TARGET/usr/include"
-          export LDFLAGS_mips_unknown_linux_uclibc="-L$STAGING_DIR_TARGET/usr/lib"
+          export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
+          export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
 
-          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-uclibc --release
+          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-musl --release
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
           name: bully-rs-wl500gp-19.07
-          path: target/mips-unknown-linux-uclibc/release/bully-rs
+          path: target/mips-unknown-linux-musl/release/bully-rs
