@@ -19,24 +19,12 @@ jobs:
 
       - name: Stažení a příprava OpenWrt 19.07 SDK
         run: |
-          URL_MAIN="https://downloads.openwrt.org/releases/19.07.10/targets/bcm47xx/generic"
-          URL_ARCHIVE="https://archive.openwrt.org/releases/19.07.10/targets/bcm47xx/generic"
+          SDK_URL="https://downloads.openwrt.org/releases/19.07.10/targets/bcm47xx/generic/openwrt-sdk-19.07.10-bcm47xx-generic_gcc-7.5.0_musl.Linux-x86_64.tar.xz"
           
-          # Stažení SDK (s detekcí správného název souboru z adresáře)
-          wget -q -O- $URL_MAIN/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1 > sdk_filename.txt || true
+          echo "Stahuji SDK z: $SDK_URL"
+          wget --tries=5 --retry-connrefused -q "$SDK_URL" -O sdk.tar.xz
           
-          if [ ! -s sdk_filename.txt ]; then
-            wget -q -O- $URL_ARCHIVE/ | grep -o 'openwrt-sdk-[^"]*\.tar\.xz' | head -n 1 > sdk_filename.txt
-            BASE_URL=$URL_ARCHIVE
-          else
-            BASE_URL=$URL_MAIN
-          fi
-          
-          SDK_FILE=$(cat sdk_filename.txt)
-          echo "Stahuji SDK: $SDK_FILE"
-          
-          wget "$BASE_URL/$SDK_FILE"
-          tar -xf "$SDK_FILE"
+          tar -xf sdk.tar.xz
           mv openwrt-sdk-* sdk
 
       - name: Instalace Rust Nightly
@@ -61,30 +49,16 @@ jobs:
           
           echo "Nalezený linker: $GCC_NAME"
           
-          # Pro OpenWrt 19.07 bcm47xx se typicky používá target musl nebo uclibc podle konkrétního SDK toolchainu
-          if [[ "$GCC_NAME" == *"musl"* ]]; then
-            TARGET="mips-unknown-linux-musl"
-          else
-            TARGET="mips-unknown-linux-uclibc"
-          fi
-          
-          echo "Použitý target: $TARGET"
-          
           export CC_mips_unknown_linux_musl="$GCC_NAME"
           export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_NAME"
-          export CC_mips_unknown_linux_uclibc="$GCC_NAME"
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_UCLIBC_LINKER="$GCC_NAME"
           
           export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
           export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
-          export CFLAGS_mips_unknown_linux_uclibc="-I$STAGING_DIR_TARGET/usr/include"
-          export LDFLAGS_mips_unknown_linux_uclibc="-L$STAGING_DIR_TARGET/usr/lib"
 
-          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target $TARGET --release
+          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-musl --release
           
-          # Příprava výstupní složky
           mkdir -p build_output
-          cp target/$TARGET/release/bully-rs build_output/
+          cp target/mips-unknown-linux-musl/release/bully-rs build_output/
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
