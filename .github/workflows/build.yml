@@ -1,4 +1,4 @@
-name: Build bully-rs for WL-500gP
+name: Build bully-rs for WL-500gP (Legacy OpenWrt)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:bcm47xx-mips74k-22.03.5
+      image: openwrt/sdk:bcm47xx-mips32-19.07.10
       options: --user root
 
     steps:
@@ -20,35 +20,35 @@ jobs:
           export PATH="$HOME/.cargo/bin:$PATH"
           rustup component add rust-src --toolchain nightly
 
-      - name: Kompilace pro WL-500gP (MIPS Big Endian)
+      - name: Kompilace pro WL-500gP (uClibc / OpenWrt 19.07)
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Nalezení adresářů v SDK
+          # Nalezení adresářů v SDK 19.07
           TOOLCHAIN_DIR=$(find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
           STAGING_DIR_TARGET=$(find /builder/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
           
-          # Přidání binárního adresáře toolchainu do PATH
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="/builder/staging_dir"
           
-          # Získání pouze názvu souboru (např. mips-openwrt-linux-musl-gcc)
+          # Vyhledání GCC kompilátoru
           GCC_FULL_PATH=$(find $TOOLCHAIN_DIR/bin -maxdepth 1 -type f -name "*-gcc" | head -n 1)
           GCC_NAME=$(basename "$GCC_FULL_PATH")
           
           echo "Nalezený linker: $GCC_NAME"
           
-          export CC_mips_unknown_linux_musl="$GCC_NAME"
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_NAME"
+          export CC_mips_unknown_linux_uclibc="$GCC_NAME"
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_UCLIBC_LINKER="$GCC_NAME"
           
-          # C flags pro knihovny z SDK (včetně libpcap)
-          export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
-          export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
+          # C flags pro knihovny z SDK
+          export CFLAGS_mips_unknown_linux_uclibc="-I$STAGING_DIR_TARGET/usr/include"
+          export LDFLAGS_mips_unknown_linux_uclibc="-L$STAGING_DIR_TARGET/usr/lib"
 
-          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-musl --release
+          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-uclibc --release
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
-          name: bully-rs-wl500gp
-          path: target/mips-unknown-linux-musl/release/bully-rs
+          name: bully-rs-wl500gp-legacy
+          path: target/mips-unknown-linux-uclibc/release/bully-rs
+
