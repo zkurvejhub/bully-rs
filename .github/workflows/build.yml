@@ -24,7 +24,6 @@ jobs:
           echo "Stahuji SDK z: $URL"
           curl -fLC - --retry 5 "$URL" -o sdk.tar.xz
           
-          # Kontrola, zda stažený soubor je skutečně tar.xz archiv
           file sdk.tar.xz
           
           mkdir -p sdk
@@ -42,12 +41,18 @@ jobs:
           
           SDK_DIR="$(pwd)/sdk"
           
-          # Vyhledání složek v staging_dir
-          TOOLCHAIN_DIR=$(find "$SDK_DIR/staging_dir" -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
-          STAGING_DIR_TARGET=$(find "$SDK_DIR/staging_dir" -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
+          # Hledáme jakoukoliv toolchain složku v staging_dir (bez ohledu na mips/mipsel)
+          TOOLCHAIN_DIR=$(find "$SDK_DIR/staging_dir" -mindepth 1 -maxdepth 1 -type d -name "toolchain-*" | head -n 1)
+          STAGING_DIR_TARGET=$(find "$SDK_DIR/staging_dir" -mindepth 1 -maxdepth 1 -type d -name "target-*" | head -n 1)
           
           echo "Toolchain dir: $TOOLCHAIN_DIR"
           echo "Target dir: $STAGING_DIR_TARGET"
+          
+          if [ -z "$TOOLCHAIN_DIR" ]; then
+            echo "CHYBA: Složka toolchainu nebyla v SDK nalezena!"
+            ls -la "$SDK_DIR/staging_dir"
+            exit 1
+          fi
           
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="$SDK_DIR/staging_dir"
@@ -56,7 +61,8 @@ jobs:
           GCC_PATH=$(find "$TOOLCHAIN_DIR/bin" -maxdepth 1 -type f -name "*-gcc" | head -n 1)
           
           if [ -z "$GCC_PATH" ]; then
-            echo "CHYBA: Linker nebyl nalezen!"
+            echo "CHYBA: Linker nebyl nalezen v $TOOLCHAIN_DIR/bin!"
+            ls -la "$TOOLCHAIN_DIR/bin"
             exit 1
           fi
 
@@ -65,24 +71,28 @@ jobs:
           # Příprava konfigurace pro Cargo
           mkdir -p .cargo
           cat <<EOF > .cargo/config.toml
+          [target.mipsel-unknown-linux-musl]
+          linker = "$GCC_PATH"
+
           [target.mips-unknown-linux-musl]
           linker = "$GCC_PATH"
           EOF
 
-          # Nastavení prostředí pro C zkontrolované závislosti
-          export CC_mips_unknown_linux_musl="$GCC_PATH"
-          export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
-          export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
+          # Určení cílového targetu podle architekury (WL-500gP používá mipsel)
+          TARGET_ARCH="mipsel-unknown-linux-musl"
 
-          echo "Spouštím Cargo build..."
-          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target mips-unknown-linux-musl --release
+          export CC_mipsel_unknown_linux_musl="$GCC_PATH"
+          export CFLAGS_mipsel_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
+          export LDFLAGS_mipsel_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
+
+          echo "Spouštím Cargo build pro $TARGET_ARCH..."
+          cargo +nightly build -Z build-std=core,alloc,std,proc_macro --target $TARGET_ARCH --release
           
           mkdir -p build_output
-          cp target/mips-unknown-linux-musl/release/bully-rs build_output/
+          cp target/$TARGET_ARCH/release/bully-rs build_output/
 
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
           name: bully-rs-wl500gp-19.07
           path: build_output/bully-rs
-      
