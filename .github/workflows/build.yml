@@ -28,18 +28,20 @@ jobs:
           TOOLCHAIN_DIR=$(find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
           STAGING_DIR_TARGET=$(find /builder/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
           
+          # Přidání binárního adresáře toolchainu do PATH
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="/builder/staging_dir"
           
-          # Vyhledání cesty k GCC kompilátoru
-          GCC_PATH=$(find $TOOLCHAIN_DIR/bin -maxdepth 1 -executable -name "*-gcc" | head -n 1)
+          # Získání pouze názvu souboru (např. mips-openwrt-linux-musl-gcc)
+          GCC_FULL_PATH=$(find $TOOLCHAIN_DIR/bin -maxdepth 1 -type f -name "*-gcc" | head -n 1)
+          GCC_NAME=$(basename "$GCC_FULL_PATH")
           
-          echo "Nalezený linker path: $GCC_PATH"
+          echo "Nalezený linker: $GCC_NAME"
           
-          export CC_mips_unknown_linux_musl="$GCC_PATH"
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_PATH"
+          export CC_mips_unknown_linux_musl="$GCC_NAME"
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_NAME"
           
-          # C flags pro knihovny z SDK
+          # C flags pro knihovny z SDK (včetně libpcap)
           export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
           export LDFLAGS_mips_unknown_linux_musl="-L$STAGING_DIR_TARGET/usr/lib"
 
