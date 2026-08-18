@@ -24,19 +24,20 @@ jobs:
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Nalezení BCM47xx C toolchainu v SDK
-          TOOLCHAIN_DIR=$(ls -d /builder/staging_dir/toolchain-mips_* 2>/dev/null | head -n 1)
-          STAGING_DIR_TARGET=$(ls -d /builder/staging_dir/target-mips_* 2>/dev/null | head -n 1)
+          # Nalezení adresářů v SDK
+          TOOLCHAIN_DIR=$(find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
+          STAGING_DIR_TARGET=$(find /builder/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
           
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="/builder/staging_dir"
           
-          # Dynamické vyhledání přesného názvu GCC kompilátoru
-          GCC_BIN=$(basename $(ls $TOOLCHAIN_DIR/bin/*-gcc 2>/dev/null | head -n 1))
-          echo "Nalezený linker: $GCC_BIN"
+          # Vyhledání cesty k GCC kompilátoru
+          GCC_PATH=$(find $TOOLCHAIN_DIR/bin -maxdepth 1 -executable -name "*-gcc" | head -n 1)
           
-          export CC_mips_unknown_linux_musl="$GCC_BIN"
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_BIN"
+          echo "Nalezený linker path: $GCC_PATH"
+          
+          export CC_mips_unknown_linux_musl="$GCC_PATH"
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_PATH"
           
           # C flags pro knihovny z SDK
           export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
