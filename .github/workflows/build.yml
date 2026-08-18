@@ -19,13 +19,17 @@ jobs:
 
       - name: Stažení a příprava OpenWrt 19.07 SDK
         run: |
-          SDK_URL="https://downloads.openwrt.org/releases/19.07.10/targets/bcm47xx/generic/openwrt-sdk-19.07.10-bcm47xx-generic_gcc-7.5.0_musl.Linux-x86_64.tar.xz"
+          # Přímý odkaz na SDK OpenWrt 19.07.10 pro bcm47xx generic
+          URL="https://archive.openwrt.org/releases/19.07.10/targets/bcm47xx/generic/openwrt-sdk-19.07.10-bcm47xx-generic_gcc-7.5.0_musl.Linux-x86_64.tar.xz"
           
-          echo "Stahuji SDK z: $SDK_URL"
-          wget --tries=5 --retry-connrefused -q "$SDK_URL" -O sdk.tar.xz
+          echo "Stahuji SDK z: $URL"
+          curl -fLC - --retry 5 "$URL" -o sdk.tar.xz
           
-          tar -xf sdk.tar.xz
-          mv openwrt-sdk-* sdk
+          # Kontrola, zda stažený soubor není chybová HTML stránka
+          file sdk.tar.xz
+          
+          mkdir -p sdk
+          tar -xf sdk.tar.xz -C sdk --strip-components=1
 
       - name: Instalace Rust Nightly
         run: |
