@@ -1,4 +1,4 @@
-name: Build bully-rs for WL-500gP (Legacy OpenWrt)
+name: Build bully-rs for WL-500gP (Legacy OpenWrt 19.07)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: openwrt/sdk:bcm47xx-mips32-19.07.10
+      # Správný tag Docker image pro BCM47xx v OpenWrt 19.07:
+      image: openwrt/sdk:bcm47xx-generic-v19.07.10
       options: --user root
 
     steps:
@@ -24,7 +25,7 @@ jobs:
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           
-          # Nalezení adresářů v SDK 19.07
+          # Nalezení adresářů v SDK
           TOOLCHAIN_DIR=$(find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-mips_*" | head -n 1)
           STAGING_DIR_TARGET=$(find /builder/staging_dir -maxdepth 1 -type d -name "target-mips_*" | head -n 1)
           
@@ -49,6 +50,5 @@ jobs:
       - name: Uložení binárky
         uses: actions/upload-artifact@v4
         with:
-          name: bully-rs-wl500gp-legacy
+          name: bully-rs-wl500gp-19.07
           path: target/mips-unknown-linux-uclibc/release/bully-rs
-
