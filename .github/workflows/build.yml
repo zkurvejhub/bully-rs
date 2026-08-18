@@ -31,9 +31,12 @@ jobs:
           export PATH="$TOOLCHAIN_DIR/bin:$PATH"
           export STAGING_DIR="/builder/staging_dir"
           
-          # Nastavení cross-kompilátoru pro mips-unknown-linux-musl
-          export CC_mips_unknown_linux_musl=mips-openwrt-linux-gcc
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER=mips-openwrt-linux-gcc
+          # Dynamické vyhledání přesného názvu GCC kompilátoru
+          GCC_BIN=$(basename $(ls $TOOLCHAIN_DIR/bin/*-gcc 2>/dev/null | head -n 1))
+          echo "Nalezený linker: $GCC_BIN"
+          
+          export CC_mips_unknown_linux_musl="$GCC_BIN"
+          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_LINKER="$GCC_BIN"
           
           # C flags pro knihovny z SDK
           export CFLAGS_mips_unknown_linux_musl="-I$STAGING_DIR_TARGET/usr/include"
