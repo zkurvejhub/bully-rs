@@ -17,16 +17,13 @@ jobs:
           sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev \
             zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip python3
 
-      - name: Stažení a příprava OpenWrt 19.07 SDK
+      - name: Stažení a příprava OpenWrt 19.07 SDK (brcm47xx)
         run: |
-          # Přímý odkaz na SDK OpenWrt 19.07.10 pro bcm47xx generic
-          URL="https://archive.openwrt.org/releases/19.07.10/targets/bcm47xx/generic/openwrt-sdk-19.07.10-bcm47xx-generic_gcc-7.5.0_musl.Linux-x86_64.tar.xz"
+          # Přímý odkaz přímo z archive.openwrt.org podle obrázku
+          URL="https://archive.openwrt.org/releases/19.07.10/targets/brcm47xx/generic/openwrt-sdk-19.07.10-brcm47xx-generic_gcc-7.5.0_musl.Linux-x86_64.tar.xz"
           
           echo "Stahuji SDK z: $URL"
           curl -fLC - --retry 5 "$URL" -o sdk.tar.xz
-          
-          # Kontrola, zda stažený soubor není chybová HTML stránka
-          file sdk.tar.xz
           
           mkdir -p sdk
           tar -xf sdk.tar.xz -C sdk --strip-components=1
